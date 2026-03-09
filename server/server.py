@@ -41,6 +41,14 @@ def handle_command(api, cmd):
         _, slide = _get_slide(api, presentation_id, slide_index)
         return {"status": "ok", "response": api.duplicate_slide(presentation_id, slide["objectId"])}
 
+    if tool == "delete_objects":
+        presentation_id = cmd["presentation_id"]
+        object_ids = cmd["object_ids"]
+        requests = [{"deleteObject": {"objectId": oid}} for oid in object_ids]
+        if not requests:
+            return {"status": "ok", "message": "no objects to delete"}
+        return {"status": "ok", "response": api.batch_update(presentation_id, requests)}
+
     if tool == "clear_slide":
         presentation_id = cmd["presentation_id"]
         slide_index = cmd["slide_index"]

@@ -1,5 +1,6 @@
 credentials.json
 token.json
+scripts/tmp-*.py
 venv/
 __pycache__/
 *.pyc

@@ -125,7 +125,8 @@ def _text_requests(op, slide_id):
                 )
 
             if "alignment" in text_style:
-                alignment = text_style["alignment"]
+                _align_map = {"LEFT": "START", "RIGHT": "END"}
+                alignment = _align_map.get(text_style["alignment"], text_style["alignment"])
                 requests.append(
                     {
                         "updateParagraphStyle": {

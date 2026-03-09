@@ -1,47 +1,131 @@
-# Google Slides + Drive Setup
+# google-sheets-draw
 
-This project uses the Google Slides and Drive APIs, and `test.py` runs a quick smoke test once you have the credentials configured locally.
+A local socket server that lets AI agents (Claude, Codex, etc.) draw on Google Slides presentations by sending JSON commands. The server translates those commands into Google Slides API `batchUpdate` calls using a library of skill definitions.
+
+**AI agents: read [`AGENT.md`](./AGENT.md) first** — it explains how to start working with the server and how to compose drawings.
+
+---
+
+## Folder Structure
+
+```
+google-sheets-draw/
+├── AGENT.md                  ← AI agent onboarding guide (start here if you're an LLM)
+├── README.md                 ← this file — human setup instructions
+├── config.json               ← presentation_id and slide_index
+├── run_server.py             ← start the socket server
+├── socket_client_example.py  ← full example: smiley face with connectors and text
+│
+├── server/
+│   ├── server.py             ← socket server; dispatches commands to handlers
+│   ├── batch_planner.py      ← builds batchUpdate requests from operation dicts
+│   ├── slide_reader.py       ← reads slide elements (type, text, x/y/w/h)
+│   └── slides_api.py         ← thin wrapper around googleapiclient
+│
+├── scripts/
+│   ├── send_command.py       ← TCP client utility — pipe JSON in, get response out
+│   └── tmp-*.py              ← user job scripts (gitignored)
+│
+└── skills/                   ← reference docs for composing drawing operations
+    ├── read-slide/           ← inspect slide state before drawing
+    ├── batch-draw/           ← execute a batch of operations (the executor)
+    ├── draw-shapes/          ← rectangles, ellipses, flowchart symbols, callouts
+    ├── draw-lines/           ← lines, arrows, connectors
+    ├── draw-text/            ← text boxes, labels, banners
+    ├── draw-table/           ← tables with cell styling and merges
+    ├── colors/               ← color specification reference
+    ├── clear-slide/          ← delete all elements on a slide
+    └── duplicate-slide/      ← copy a slide
+```
+
+---
 
 ## Prerequisites
-1. Python 3.10+ (or the version your virtual environment uses).
-2. The dependencies listed in `requirements.txt` (`google-auth`, `google-auth-oauthlib`, `google-api-python-client`, etc.).
-3. A Google Cloud project that you control and can configure.
 
-## Step-by-step credential setup
-1. Open the Google Cloud Console and select or create the project you will use for this repo.
-2. Configure the OAuth consent screen first: choose *External* (for a personal Gmail account), fill in the required fields, and save. After it is configured, add your testing Gmail address as a *Test user* so you can skip verification.
-3. Enable both of these APIs in the same project: the **Google Slides API** and the **Google Drive API**.
-4. Still in the same project, create an **OAuth 2.0 Client ID** credential. Choose “Desktop app” (or “Other”) because `test.py` uses the installed app flow. Download the resulting `credentials.json` and drop it in the project root, replacing any placeholder file already there.
-5. Leave `token.json` in place (or let the script generate it) so future runs reuse the stored tokens; the file is created after the first successful login.
+1. Python 3.10+
+2. Dependencies in `requirements.txt` (`google-auth`, `google-auth-oauthlib`, `google-api-python-client`, etc.)
+3. A Google Cloud project with the **Google Slides API** and **Google Drive API** enabled
 
-## Local configuration
-1. (Optional) Customize `config.json` with the `presentation_id` and `slide_index` you want `test.py` to target.
-2. Install dependencies from the repo root:
-   ```bash
-   python -m pip install -r requirements.txt
-   ```
+---
 
-## Verifying the environment
-Run `python test.py` from the repo root. The script will:
-1. Prompt you to authenticate via a browser window and persist the credentials into `token.json`.
-2. List presentation files in your Drive so you can confirm access.
-3. Draw a rectangle on the configured slide to prove the Slides API is writable.
+## Credential Setup
 
-If the script succeeds without errors, the Google credentials and APIs are set up correctly.
+1. Open [Google Cloud Console](https://console.cloud.google.com) and select or create a project.
+2. Configure the **OAuth consent screen**: choose *External*, fill in required fields, and add your Gmail as a *Test user*.
+3. Enable **Google Slides API** and **Google Drive API** in the same project.
+4. Create an **OAuth 2.0 Client ID** credential (choose "Desktop app"). Download `credentials.json` and place it in the project root.
+5. `token.json` is created automatically after the first login and reused on subsequent runs.
 
-## Local skill server (optional)
-1. Run `python run_server.py` from the repo root. This script calls `authentication.py` to refresh or produce `token.json` and then starts the socket server for the skills.
-2. If you prefer to manage authentication manually, you can still run `python server/server.py` once `token.json` is present.
-3. The server listens on `127.0.0.1:8765` and exposes a small set of drawing-related skills defined in `skills/`.
-4. You can exercise the API with `socket_client_example.py` or by sending JSON via a local socket client.
+Both `credentials.json` and `token.json` are gitignored.
 
-Skills:
-- `read_slide` – inspect elements on a slide.
-- `batch_draw` – send many operations in a single batchUpdate.
-- `duplicate_slide` – copy a slide if you want a visible history of changes.
-- `clear_slide` – delete all elements on a slide before re-drawing.
+---
 
-Sample client:
-- `socket_client_example.py` builds a smiley face with rectangles, bent connectors, and a translucent banner with cursive text, then issues a single `batch_draw` request to demonstrate the advanced capabilities described in `skills/batch_draw.md`.
+## Installation
 
-LLMs like Claude can rely on these skill definitions to plan and execute drawings without hitting Google APIs directly for every action.
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+---
+
+## Verifying the Setup
+
+```bash
+python3 test.py
+```
+
+This will:
+1. Prompt browser-based authentication and save `token.json`
+2. List presentation files in your Drive
+3. Draw a rectangle on the configured slide to confirm write access
+
+---
+
+## Running the Server
+
+```bash
+python3 run_server.py
+```
+
+The server listens on `127.0.0.1:8765`. Keep it running while you work. It handles authentication automatically on startup.
+
+If `token.json` already exists you can also run `python3 server/server.py` directly.
+
+---
+
+## Available Server Tools
+
+| Tool | Description |
+|---|---|
+| `read_slide` | Returns all elements with IDs, types, text, and position |
+| `batch_draw` | Execute a list of drawing operations in a single API call |
+| `delete_objects` | Delete specific elements by object ID |
+| `duplicate_slide` | Copy a slide |
+| `clear_slide` | Delete every element on a slide |
+
+---
+
+## Quick Test
+
+```bash
+# Read the current slide
+python3 scripts/send_command.py '{
+  "tool": "read_slide",
+  "presentation_id": "YOUR_PRESENTATION_ID",
+  "slide_index": 0
+}'
+
+# Or use config.json values directly from a script
+python3 socket_client_example.py
+```
+
+---
+
+## For AI Agents
+
+See [`AGENT.md`](./AGENT.md) for:
+- How to check if the server is running
+- The full workflow (read → plan → delete → draw)
+- Coordinate system and unit conversion (EMU → PT)
+- Key API facts and common pitfalls
+- How to write and run a job script (`scripts/tmp-*.py`)

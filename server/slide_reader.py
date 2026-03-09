@@ -24,6 +24,14 @@ def read_slide(api, cmd):
 
         element_summary = {"objectId": element.get("objectId"), "type": element_type}
 
+        transform = element.get("transform", {})
+        size = element.get("size", {})
+        if transform or size:
+            element_summary["x"] = round(transform.get("translateX", 0), 1)
+            element_summary["y"] = round(transform.get("translateY", 0), 1)
+            element_summary["w"] = round(size.get("width", {}).get("magnitude", 0), 1)
+            element_summary["h"] = round(size.get("height", {}).get("magnitude", 0), 1)
+
         if element_type == "shape":
             text_runs = element["shape"].get("text", {}).get("textElements", [])
             text_content = "".join(
