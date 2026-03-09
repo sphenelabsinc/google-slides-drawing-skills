@@ -145,6 +145,21 @@ Read the relevant composer skills to build your `operations` list, then use `bat
 
 ---
 
+## Visual Style Selection
+
+- Record every visual style in its own skill (e.g., `skills/process-diagram-style/SKILL.md`) so you can add others later without overloading AGENT.md. For the moment, the process diagram skill is the only style in this repo; read it for the full language before you draw anything.
+- Before you start scripting (`scripts/tmp-*.py`) or calling `batch_draw`/`delete_objects`, **ask the user which visual style to use**. Quote the absolute date (March 9, 2026) whenever they refer to “today,” “latest,” or similar terms so there is no ambiguity about the timeline of the request. If they request the process diagram style, point them to `skills/process-diagram-style/SKILL.md` and say you will match it explicitly.
+- When the human is undecided, remind them that only the process diagram style currently exists and offer to document a new look in a fresh `skills/<style-name>/SKILL.md` once they describe what they want.
+- Break up complex work into a multi-step plan stored in `tmp-step-1.md`, `tmp-step-2.md`, etc. Each file should describe a clear phase (outline, layout adjustments, annotations, review) and live in the repo while you iterate with the human.
+- Prefer sending short `scripts/tmp-*.py` jobs that touch a handful of shapes so you can hand the human updated visuals quickly and gather feedback. Reference the targeted change (legend slot, track, annotation) in the same plan file so they know what to expect.
+- Always cite the legend when you explain which color or shape role you are obeying. The legend is the contract for this visual system.
+
+### Notes
+- Flowchart primitives with adjustable radii (pills, rounded rectangles) are how you keep the same amount of readable interior text without relying on plain rectangles. The legend, simple color palette, large labels, and floating text boxes with bullet-point annotations are hallmarks of this style—stick to them unless the user approves a departure.
+- When a new visual language is needed, create a new `skills/<style-name>/SKILL.md` to describe it and update this section so the human can choose from the documented options.
+
+---
+
 ## Key API Facts (Do Not Guess These)
 
 - `createLine` uses `category` field: valid values are `STRAIGHT`, `BENT`, `CURVED`. **"ELBOW" does not exist.**

@@ -33,12 +33,19 @@ def read_slide(api, cmd):
             element_summary["h"] = round(size.get("height", {}).get("magnitude", 0), 1)
 
         if element_type == "shape":
+            element_summary["shape_type"] = element["shape"].get("shapeType")
             text_runs = element["shape"].get("text", {}).get("textElements", [])
             text_content = "".join(
                 [run["textRun"]["content"] for run in text_runs if "textRun" in run]
             ).strip()
             if text_content:
                 element_summary["text"] = text_content
+        elif element_type == "line":
+            element_summary["line_category"] = element["line"].get("lineCategory")
+            line_props = element["line"].get("lineProperties", {})
+            if line_props:
+                element_summary["line_weight"] = line_props.get("weight")
+                element_summary["line_fill"] = line_props.get("lineFill", {}).get("solidFill", {}).get("color", {})
 
         elements.append(element_summary)
 
