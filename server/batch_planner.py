@@ -18,7 +18,17 @@ def execute_batch(api, cmd):
         elif op_type == "text":
             requests.extend(_text_requests(op, slide_id))
         elif op_type in {"line", "connector", "arrow"}:
-            requests.append(_line_request(op, slide_id))
+            requests.extend(_line_request(op, slide_id))
+        elif op_type == "table":
+            requests.extend(_table_requests(op, slide_id))
+        elif op_type == "insert_text":
+            requests.append(_insert_table_text(op))
+        elif op_type == "update_table_cell":
+            requests.extend(_update_table_cell(op))
+        elif op_type == "merge_table_cells":
+            requests.append(_merge_table_cells(op))
+        elif op_type == "reroute_line":
+            requests.append({"rerouteLine": {"objectId": op["id"]}})
         else:
             raise ValueError(f"unknown operation type: {op_type}")
 
@@ -97,7 +107,7 @@ def _text_requests(op, slide_id):
                 fields.append("italic")
 
             if "foreground_color" in text_style:
-                color = _color_payload(text_style["foreground_color"])
+                color, _ = _color_payload(text_style["foreground_color"])
                 if color:
                     style_payload["foregroundColor"] = {"opaqueColor": color}
                     fields.append("foregroundColor")
@@ -134,41 +144,55 @@ def _line_request(op, slide_id):
         {
             "createLine": {
                 "objectId": op["id"],
-                "lineCategory": op.get("lineCategory", "STRAIGHT"),
+                "category": op.get("lineCategory", op.get("category", "STRAIGHT")),
                 "elementProperties": _element_properties(op, slide_id),
             }
         }
     ]
 
     line_props = {}
-    color, alpha = _color_payload(op.get("line_color"))
+    color, _ = _color_payload(op.get("line_color"))
     if color:
-        line_fill = {"color": color}
-        if alpha is not None:
-            line_fill["alpha"] = alpha
-        line_props["lineFill"] = {"solidFill": line_fill}
+        line_props["lineFill"] = {"solidFill": {"color": color}}
 
     weight = op.get("line_weight")
     if weight:
         line_props["weight"] = {"magnitude": weight, "unit": "PT"}
 
     if "start_arrow" in op:
-        line_props["startArrow"] = {"arrowHead": op["start_arrow"]}
+        line_props["startArrow"] = op["start_arrow"]
 
     if "end_arrow" in op:
-        line_props["endArrow"] = {"arrowHead": op["end_arrow"]}
+        line_props["endArrow"] = op["end_arrow"]
+
+    if "start_connection" in op:
+        sc = op["start_connection"]
+        line_props["startConnection"] = {
+            "connectedObjectId": sc["connected_object_id"],
+            "connectionSiteIndex": sc.get("connection_site_index", 0),
+        }
+
+    if "end_connection" in op:
+        ec = op["end_connection"]
+        line_props["endConnection"] = {
+            "connectedObjectId": ec["connected_object_id"],
+            "connectionSiteIndex": ec.get("connection_site_index", 2),
+        }
 
     if line_props:
         fields = []
         if "lineFill" in line_props:
             fields.append("lineFill.solidFill.color")
-            fields.append("lineFill.solidFill.alpha")
         if "weight" in line_props:
             fields.append("weight")
         if "startArrow" in line_props:
             fields.append("startArrow")
         if "endArrow" in line_props:
             fields.append("endArrow")
+        if "startConnection" in line_props:
+            fields.append("startConnection")
+        if "endConnection" in line_props:
+            fields.append("endConnection")
 
         requests.append(
             {
@@ -186,11 +210,9 @@ def _line_request(op, slide_id):
 def _style_requests(op, object_id):
     requests = []
 
-    fill_color, fill_alpha = _color_payload(op.get("fill_color"))
+    fill_color, _ = _color_payload(op.get("fill_color"))
     if fill_color:
         solid_fill = {"color": fill_color}
-        if fill_alpha is not None:
-            solid_fill["alpha"] = fill_alpha
         requests.append(
             {
                 "updateShapeProperties": {
@@ -200,7 +222,7 @@ def _style_requests(op, object_id):
                             "solidFill": solid_fill
                         }
                     },
-                    "fields": "shapeBackgroundFill.solidFill.color,shapeBackgroundFill.solidFill.alpha",
+                    "fields": "shapeBackgroundFill.solidFill.color",
                 }
             }
         )
@@ -288,5 +310,75 @@ def _build_color_dict(r, g, b):
             "red": normalize(r),
             "green": normalize(g),
             "blue": normalize(b),
+        }
+    }
+
+
+def _table_requests(op, slide_id):
+    return [
+        {
+            "createTable": {
+                "objectId": op["id"],
+                "elementProperties": _element_properties(op, slide_id),
+                "rows": op["rows"],
+                "columns": op["columns"],
+            }
+        }
+    ]
+
+
+def _insert_table_text(op):
+    req = {
+        "insertText": {
+            "objectId": op["id"],
+            "text": op["text"],
+            "insertionIndex": op.get("insertion_index", 0),
+        }
+    }
+    row = op.get("cell_row")
+    col = op.get("cell_col")
+    if row is not None and col is not None:
+        req["insertText"]["cellLocation"] = {"rowIndex": row, "columnIndex": col}
+    return req
+
+
+def _update_table_cell(op):
+    requests = []
+    fill_color, _ = _color_payload(op.get("fill_color"))
+    if fill_color:
+        requests.append(
+            {
+                "updateTableCellProperties": {
+                    "objectId": op["id"],
+                    "tableRange": {
+                        "location": {
+                            "rowIndex": op["cell_row"],
+                            "columnIndex": op["cell_col"],
+                        },
+                        "rowSpan": op.get("row_span", 1),
+                        "columnSpan": op.get("col_span", 1),
+                    },
+                    "tableCellProperties": {
+                        "tableCellBackgroundFill": {"solidFill": {"color": fill_color}}
+                    },
+                    "fields": "tableCellBackgroundFill.solidFill.color",
+                }
+            }
+        )
+    return requests
+
+
+def _merge_table_cells(op):
+    return {
+        "mergeTableCells": {
+            "objectId": op["id"],
+            "tableRange": {
+                "location": {
+                    "rowIndex": op["row"],
+                    "columnIndex": op["col"],
+                },
+                "rowSpan": op.get("row_span", 1),
+                "columnSpan": op.get("col_span", 1),
+            },
         }
     }
