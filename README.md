@@ -1,4 +1,4 @@
-# google-sheets-draw
+# google-slides-drawing-skills
 
 A local socket server that lets AI agents (Claude, Codex, etc.) draw on Google Slides presentations by sending JSON commands. The server translates those commands into Google Slides API `batchUpdate` calls using a library of skill definitions.
 
