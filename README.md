@@ -28,3 +28,20 @@ Run `python test.py` from the repo root. The script will:
 3. Draw a rectangle on the configured slide to prove the Slides API is writable.
 
 If the script succeeds without errors, the Google credentials and APIs are set up correctly.
+
+## Local skill server (optional)
+1. Run `python run_server.py` from the repo root. This script calls `authentication.py` to refresh or produce `token.json` and then starts the socket server for the skills.
+2. If you prefer to manage authentication manually, you can still run `python server/server.py` once `token.json` is present.
+3. The server listens on `127.0.0.1:8765` and exposes a small set of drawing-related skills defined in `skills/`.
+4. You can exercise the API with `socket_client_example.py` or by sending JSON via a local socket client.
+
+Skills:
+- `read_slide` – inspect elements on a slide.
+- `batch_draw` – send many operations in a single batchUpdate.
+- `duplicate_slide` – copy a slide if you want a visible history of changes.
+- `clear_slide` – delete all elements on a slide before re-drawing.
+
+Sample client:
+- `socket_client_example.py` builds a smiley face with rectangles, bent connectors, and a translucent banner with cursive text, then issues a single `batch_draw` request to demonstrate the advanced capabilities described in `skills/batch_draw.md`.
+
+LLMs like Claude can rely on these skill definitions to plan and execute drawings without hitting Google APIs directly for every action.
