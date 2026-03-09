@@ -1,0 +1,10 @@
+credentials.json
+token.json
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.idea/
+.vscode/
+*.log
+*.tmp
