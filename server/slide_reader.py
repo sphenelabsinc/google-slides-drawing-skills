@@ -11,7 +11,8 @@ def read_slide(api, cmd):
     slide = slides[slide_index]
     elements = []
 
-    for element in slide.get("pageElements", []):
+    page_elements = slide.get("pageElements", [])
+    for element in page_elements:
         element_type = (
             "shape"
             if "shape" in element
@@ -40,17 +41,36 @@ def read_slide(api, cmd):
             ).strip()
             if text_content:
                 element_summary["text"] = text_content
+            shape_props = element["shape"].get("shapeProperties")
+            if shape_props:
+                element_summary["shape_properties"] = shape_props
+            placeholder = element["shape"].get("placeholder")
+            if placeholder:
+                element_summary["placeholder"] = placeholder
         elif element_type == "line":
             element_summary["line_category"] = element["line"].get("lineCategory")
             line_props = element["line"].get("lineProperties", {})
             if line_props:
                 element_summary["line_weight"] = line_props.get("weight")
                 element_summary["line_fill"] = line_props.get("lineFill", {}).get("solidFill", {}).get("color", {})
+                element_summary["line_properties"] = line_props
 
         elements.append(element_summary)
 
     return {
         "slide_id": slide["objectId"],
-        "elements": elements,
+        "slide_index": slide_index,
         "title": presentation.get("title"),
+        "revision_id": slide.get("revisionId"),
+        "page_type": slide.get("pageType"),
+        "page_properties": slide.get("pageProperties"),
+        "slide_properties": slide.get("slideProperties"),
+        "layout_properties": slide.get("layoutProperties"),
+        "notes_properties": slide.get("notesProperties"),
+        "master_properties": slide.get("masterProperties"),
+        "page_background": slide.get("pageProperties", {}).get("pageBackgroundFill"),
+        "page_elements": page_elements,
+        "element_details": {element.get("objectId"): element for element in page_elements if element.get("objectId")},
+        "element_count": len(page_elements),
+        "elements": elements,
     }

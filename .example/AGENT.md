@@ -131,6 +131,7 @@ google-sheets-draw/
     ├── clear-slide/SKILL.md  ← delete all elements on a slide
     ├── duplicate-slide/SKILL.md ← copy a slide
     ├── process-diagram-style/SKILL.md ← process diagram visual language
+    ├── rainbow-art/SKILL.md ← block art for the rainbow cat
     ├── shape-pill/SKILL.md ← pill-based runtime nodes
     ├── shape-decision/SKILL.md ← decision/diamond nodes
     ├── shape-ellipse/SKILL.md ← ellipses and aggregator dots
@@ -160,9 +161,9 @@ Read the relevant composer skills to build your `operations` list, then use `bat
 
 ## Visual Style Selection
 
-- Record every visual style in its own skill (e.g., `skills/process-diagram-style/SKILL.md`) so you can add others later without overloading AGENT.md. For the moment, the process diagram skill is the only style in this repo; read it for the full language before you draw anything.
-- Before you start scripting (`scripts/tmp-*.py`) or calling `batch_draw`/`delete_objects`, **ask the user which visual style to use**. Quote the absolute date (March 9, 2026) whenever they refer to “today,” “latest,” or similar terms so there is no ambiguity about the timeline of the request. If they request the process diagram style, point them to `skills/process-diagram-style/SKILL.md` and say you will match it explicitly.
-- When the human is undecided, remind them that only the process diagram style currently exists and offer to document a new look in a fresh `skills/<style-name>/SKILL.md` once they describe what they want.
+- Record every visual style in its own skill (e.g., `skills/process-diagram-style/SKILL.md`, `skills/rainbow-art/SKILL.md`) so you can add others later without overloading AGENT.md. Currently there are two documented visuals: the process diagram language and the rainbow block art used for the cat. Read the relevant skill before making the associated drawing.
+- Before you start scripting (`scripts/tmp-*.py`) or calling `batch_draw`/`delete_objects`, **ask the user which visual style to use**. Quote the absolute date (March 9, 2026) whenever they refer to “today,” “latest,” or similar terms so there is no ambiguity about the timeline of the request. If they request the process diagram style, point them to `skills/process-diagram-style/SKILL.md`; if they request the rainbow block art, point them to `skills/rainbow-art/SKILL.md` and call out the color legend from that skill as you add shapes.
+- When the human is undecided, remind them that the repo currently documents only those two flavors and offer to describe an additional look in a fresh `skills/<style-name>/SKILL.md` once they define it.
 - Break up complex work into a multi-step plan stored in `tmp-step-1.md`, `tmp-step-2.md`, etc. Each file should describe a clear phase (outline, layout adjustments, annotations, review) and live in the repo while you iterate with the human.
 - Prefer sending short `scripts/tmp-*.py` jobs that touch a handful of shapes so you can hand the human updated visuals quickly and gather feedback. Reference the targeted change (legend slot, track, annotation) in the same plan file so they know what to expect.
 - Always cite the legend when you explain which color or shape role you are obeying. The legend is the contract for this visual system.
